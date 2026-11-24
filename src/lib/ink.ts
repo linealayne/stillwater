@@ -96,7 +96,7 @@ const COMP_FRAG = `#version 300 es
 precision highp float;
 uniform sampler2D uSim;
 uniform vec2 uSimSize, uRes;
-uniform float uDpr, uTime, uAccent, uInkOn;
+uniform float uDpr, uTime, uAccent, uInkOn, uSheen;
 uniform vec3 uT[63];
 uniform int uTN;
 uniform vec4 uTBox;
@@ -202,7 +202,7 @@ void main(){
   float edge = 1.0 - H * 0.55;
   float nh2 = max(dot(n, normalize(vec3(0.5, 0.78, 0.45) + vec3(0.0, 0.0, 1.0))), 0.0);
   float spec = pow(nh, 80.0) * 1.15 + pow(nh2, 46.0) * 0.5;
-  float soft = rib * 0.34 * H;
+  float soft = rib * 0.34 * H * uSheen;
   vec3 r = reflect(vec3(0.0, 0.0, -1.0), n);
   float strip = smoothstep(0.30, 0.46, -r.y) * smoothstep(0.80, 0.58, -r.y) * smoothstep(0.75, 0.2, abs(r.x + 0.15));
   float rim = pow(1.0 - n.z, 2.2);
@@ -291,6 +291,7 @@ export class Ink {
   private lastPX = 0;
   private lastPY = 0;
   private cursorPull = 0;
+  private sheen = 1;
   drip = 0; // external (scroll) drip amount 0..1
   accent = 0;
   edge = 0.036;
@@ -327,7 +328,7 @@ export class Ink {
     }
     for (const n of ["uPrev", "uTexel", "uAspect", "uTime", "uReact", "uRelax", "uFloor", "uFill", "uEdge", "uCursor", "uRing", "uSink", "uSplat", "uSplatN"])
       this.su[n] = gl.getUniformLocation(this.simProg, n);
-    for (const n of ["uSim", "uSimSize", "uRes", "uDpr", "uTime", "uAccent", "uInkOn", "uT", "uTN", "uTBox", "uText", "uTextRect", "uTextOn", "uClipY", "uDrip", "uLineH", "uPull"])
+    for (const n of ["uSim", "uSimSize", "uRes", "uDpr", "uTime", "uAccent", "uInkOn", "uSheen", "uT", "uTN", "uTBox", "uText", "uTextRect", "uTextOn", "uClipY", "uDrip", "uLineH", "uPull"])
       this.cu[n] = gl.getUniformLocation(this.compProg, n);
     gl.disable(gl.BLEND);
     gl.disable(gl.DEPTH_TEST);
@@ -872,6 +873,8 @@ export class Ink {
     gl.uniform1f(this.cu.uTime, this.time);
     gl.uniform1f(this.cu.uAccent, this.accent);
     gl.uniform1f(this.cu.uInkOn, this.simLive ? 1 : 0);
+    this.sheen += ((this.mode === "edges" ? 0.3 : 1) - this.sheen) * 0.04;
+    gl.uniform1f(this.cu.uSheen, this.sheen);
     gl.uniform1i(this.cu.uTN, tn);
     gl.uniform1f(this.cu.uTextOn, textOn ? 1 : 0);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);

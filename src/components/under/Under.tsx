@@ -18,6 +18,8 @@ export default function Under() {
       ink.edgeScale = window.innerWidth < 700 ? 0.36 : 1;
       if (!ink.busy) ink.settle(true);
     }
+    // hand keyboard and screen-reader focus to the new world
+    document.querySelector<HTMLElement>(".empire-title")?.focus({ preventScroll: true });
     const t = window.setTimeout(() => ScrollTrigger.refresh(), 300);
     return () => {
       window.clearTimeout(t);

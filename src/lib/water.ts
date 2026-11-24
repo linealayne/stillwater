@@ -182,8 +182,8 @@ export class Water {
     const cw = this.canvas.clientWidth;
     const ch = this.canvas.clientHeight;
     if (!cw || !ch) return;
-    let dpr = Math.min(window.devicePixelRatio || 1, 1.5);
-    if (cw * ch * dpr * dpr > 2.2e6) dpr = Math.sqrt(2.2e6 / (cw * ch));
+    let dpr = Math.min(window.devicePixelRatio || 1, 1.25);
+    if (cw * ch * dpr * dpr > 1.7e6) dpr = Math.sqrt(1.7e6 / (cw * ch));
     this.w = cw;
     this.h = ch;
     this.canvas.width = Math.round(cw * dpr);

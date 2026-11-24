@@ -334,6 +334,9 @@ html[data-mode="under"] ::selection {
   color: var(--paper);
   user-select: none;
 }
+.empire-title:focus {
+  outline: none;
+}
 .empire-title .row {
   display: block;
   white-space: nowrap;

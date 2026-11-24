@@ -45,10 +45,14 @@ export default function StageChapters() {
     const lines = Array.from(copy.current!.children) as HTMLElement[];
     const labelEls = Array.from(labels.current!.children) as HTMLElement[];
 
+    const born = performance.now();
     const load = () => {
       if (loading) return;
       loading = true;
-      import("@/lib/stage").then((m) => {
+      // never build the scene while the takeover is still receding
+      const hold = Math.max(0, 4200 - (performance.now() - born));
+      const mod = import("@/lib/stage");
+      new Promise((r) => window.setTimeout(r, hold)).then(() => mod).then((m) => {
         if (dead) return;
         try {
           stage = new m.Stage(cv, mobile);

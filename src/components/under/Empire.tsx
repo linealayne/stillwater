@@ -62,7 +62,7 @@ export default function Empire() {
   return (
     <section className={`empire${liquid ? " is-liquid" : ""}`} ref={section}>
       <div className="empire-pin">
-        <h1 className="empire-title" ref={title}>
+        <h1 className="empire-title" ref={title} tabIndex={-1}>
           <span className="row">
             <span data-line>YOUR</span> <span data-line>EMPIRE</span>
           </span>{" "}

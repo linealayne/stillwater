@@ -4,7 +4,7 @@
 
 Linea's second showcase site ("still waters run deep"). Not a business site. Its one job: make anyone who sees it think "this person can design and build anything", and look unforgettable in a TikTok/Instagram screen recording. Sister site: VELVET LAYNE (https://velvet-layne.vercel.app). Match its level of invention and polish; never repeat its specific effects.
 
-- Live: https://stillwater-linea.vercel.app (Vercel project `stillwater`, auto-deploys from `main`)
+- Live: https://stillwater-layne.vercel.app (Vercel project `stillwater`, auto-deploys from `main`)
 - Repo: https://github.com/linealayne/stillwater
 
 ## The concept: the visitor is the villain

@@ -9,7 +9,7 @@ const display = Dela_Gothic_One({ variable: "--font-display", subsets: ["latin"]
 const typed = Courier_Prime({ variable: "--font-typed", subsets: ["latin"], weight: ["400", "700"], display: "swap" });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://stillwater-linea.vercel.app"),
+  metadataBase: new URL("https://stillwater-layne.vercel.app"),
   title: "Stillwater. Building a calmer world.",
   description: "Still waters run deep. A design showcase by Layne at Linea.",
   openGraph: {
