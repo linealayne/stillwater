@@ -15,7 +15,7 @@ export default function Under() {
     const ink = bus.ink;
     if (ink) {
       ink.accent = 1;
-      ink.edgeScale = window.innerWidth < 700 ? 0.7 : 1;
+      ink.edgeScale = window.innerWidth < 700 ? 0.36 : 1;
       if (!ink.busy) ink.settle(true);
     }
     const t = window.setTimeout(() => ScrollTrigger.refresh(), 300);

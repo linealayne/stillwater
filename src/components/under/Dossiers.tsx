@@ -102,6 +102,8 @@ export default function Dossiers() {
     const cards = Array.from(sec.querySelectorAll<HTMLElement>(".dossier"));
     const inner = cards.map((c) => c.querySelector<HTMLElement>(".dossier-card")!);
     const covers = cards.map((c) => c.querySelector<HTMLElement>(".dossier-cover")!);
+    const fronts = cards.map((c) => c.querySelector<HTMLElement>(".dossier-front")!);
+    const backs = cards.map((c) => c.querySelector<HTMLElement>(".dossier-back")!);
     const st = cards.map(() => ({ tx: 0, ty: 0, lift: 0, flip: 0, gx: 0, gy: 0, gl: 0 }));
     let visible = false;
     const io = new IntersectionObserver(([e]) => (visible = e.isIntersecting), { rootMargin: "20% 0px" });
@@ -174,6 +176,10 @@ export default function Dossiers() {
         const rest = OPS[i].rest * (1 - s.lift * 0.75);
         inner[i].style.transform = `translateZ(${(s.lift * 46).toFixed(1)}px) rotateZ(${rest.toFixed(2)}deg) rotateX(${s.tx.toFixed(2)}deg) rotateY(${(s.ty + s.flip).toFixed(2)}deg) scale(${(1 + s.lift * 0.035).toFixed(3)})`;
         c.style.zIndex = hov ? "3" : "1";
+        // decide the visible face ourselves; backface-visibility is unreliable in nested 3D on WebKit
+        const facing = Math.cos(((s.ty + s.flip) * Math.PI) / 180) >= 0;
+        fronts[i].style.visibility = facing ? "visible" : "hidden";
+        backs[i].style.visibility = facing ? "hidden" : "visible";
         const cov = covers[i];
         const cr = cov.getBoundingClientRect();
         const mx = ((l.x - cr.left) / (cr.width || 1)) * cov.offsetWidth;
@@ -199,7 +205,9 @@ export default function Dossiers() {
 
   return (
     <section className="dossiers" ref={section}>
-      <div className="dossiers-dark" ref={dark} aria-hidden="true" />
+      <div className="dossiers-shade" aria-hidden="true">
+        <div className="dossiers-dark" ref={dark} />
+      </div>
       <div className="dossiers-head">
         <h2>Sign nothing. It&rsquo;s already signed.</h2>
       </div>

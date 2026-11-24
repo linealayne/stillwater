@@ -42,7 +42,7 @@ export default function Finale() {
               ink.ring.y = small ? 0.17 : 0.2;
               ink.ring.r = far * (1 - g) * (1 - g);
               ink.ring.w = p > 0.16 ? (small ? 0.024 : 0.032) + (small ? 0.03 : 0.044) * smooth(0.5, 0.66, p) : 0;
-              ink.edgeScale = (small ? 0.7 : 1) * (1 - smooth(0.2, 0.5, p));
+              ink.edgeScale = (small ? 0.36 : 1) * (1 - smooth(0.2, 0.5, p));
             },
           },
         })
@@ -55,7 +55,7 @@ export default function Finale() {
       ctx.revert();
       if (ink) {
         ink.ring.w = 0;
-        ink.edgeScale = window.innerWidth < 700 ? 0.7 : 1;
+        ink.edgeScale = window.innerWidth < 700 ? 0.36 : 1;
       }
     };
   }, [reduced]);

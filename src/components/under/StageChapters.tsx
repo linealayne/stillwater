@@ -143,8 +143,8 @@ export default function StageChapters() {
         if (a < 0.01) return;
         const x = L[i * 3];
         const y = L[i * 3 + 1];
-        const right = i % 2 === 0;
-        const col = vw / 2 + (right ? 1 : -1) * Math.min(vw * (vw < 760 ? 0.2 : 0.3), 430);
+        const right = i === 0 || i === 2 || i === 6;
+        const col = vw / 2 + (right ? 1 : -1) * Math.min(vw * (vw < 760 ? 0.27 : 0.3), 430);
         const len = Math.max(vw < 760 ? 14 : 30, right ? col - x : x - col);
         le.classList.toggle("is-left", !right);
         le.style.setProperty("--len", `${len.toFixed(0)}px`);

@@ -55,6 +55,7 @@ export class Stage {
   private parts: Part[] = [];
   private heartMat!: THREE.ShaderMaterial;
   private heartLight!: THREE.PointLight;
+  private halo!: THREE.Sprite;
   private anchors: THREE.Object3D[] = [];
   private spinY = 0;
   private rx = 0;
@@ -128,7 +129,7 @@ export class Stage {
     const sym: number[][] = nbr.map((n) => [...n]);
     nbr.forEach((ns, i) => ns.forEach((j) => !sym[j].includes(i) && sym[j].push(i)));
     // seed: where the camera is looking at the start
-    const want = new THREE.Vector3(-0.12, 0.3, 0.94).normalize();
+    const want = new THREE.Vector3(-0.2, 0.08, 0.97).normalize().applyQuaternion(new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.2, 0.29, 0)).invert());
     let seed = 0;
     let bd = -2;
     pos.forEach((p, i) => {
@@ -219,8 +220,9 @@ export class Stage {
           float flash = exp(-(uFront - vOrder) * 26.0);
           float pulse = 0.5 + 0.5 * sin(vOrder * 80.0 - uTime * 2.2);
           float core = pow(1.0 - abs(vSide), 0.55);
-          vec3 acid = vec3(0.80, 1.0, 0.0);
-          vec3 col = mix(acid, vec3(1.0), flash * 0.65) * (0.42 + 0.3 * pulse + flash * (1.5 + uSurge * 1.5));
+          vec3 acid = vec3(0.74, 1.0, 0.0);
+          float amt = min(0.5 + 0.3 * pulse + flash * (1.2 + uSurge), 1.0);
+          vec3 col = mix(acid * amt, vec3(1.0), min(flash * (0.55 + uSurge * 0.3), 1.0) * 0.8);
           gl_FragColor = vec4(col * core, 1.0);
         }`,
       transparent: true,
@@ -259,9 +261,9 @@ export class Stage {
         void main(){
           float d = length(gl_PointCoord - 0.5);
           float a = smoothstep(0.5, 0.12, d);
-          vec3 col = mix(vec3(0.20, 0.20, 0.185), vec3(0.80, 1.0, 0.0), vLit);
+          vec3 col = mix(vec3(0.20, 0.20, 0.185), vec3(0.74, 1.0, 0.0), vLit);
           col = mix(col, vec3(1.0), vFlash * 0.7);
-          gl_FragColor = vec4(col * a * (0.75 + vLit * 0.5), 1.0);
+          gl_FragColor = vec4(col * a * (0.75 + vLit * 0.25), 1.0);
         }`,
       transparent: true,
       blending: THREE.AdditiveBlending,
@@ -335,16 +337,33 @@ export class Stage {
           float g = dot(sin(p + uTime * 0.7), cos(p.zxy * 1.3 - uTime * 0.5));
           float veins = smoothstep(0.05, 0.5, abs(g));
           float f = pow(1.0 - max(dot(normalize(vN), normalize(vV)), 0.0), 2.0);
-          vec3 acid = vec3(0.80, 1.0, 0.0);
-          vec3 col = acid * (0.10 + 0.95 * veins) * uGlow;
-          col += vec3(0.95, 1.0, 0.6) * f * 0.55 * uGlow;
-          gl_FragColor = vec4(col, 1.0);
+          vec3 acid = vec3(0.74, 1.0, 0.0);
+          float core = pow(max(dot(normalize(vN), normalize(vV)), 0.0), 1.6);
+          vec3 col = acid * min((0.16 + 0.84 * veins) * (0.6 + 0.4 * core) * min(uGlow, 1.25), 1.0);
+          col = mix(col, vec3(0.93, 1.0, 0.62), clamp(core * veins * (uGlow - 0.55) * 0.55, 0.0, 0.85));
+          col += acid * f * 0.25;
+          gl_FragColor = vec4(min(col, vec3(1.0)), 1.0);
         }`,
     });
     const heart = new THREE.Mesh(new THREE.IcosahedronGeometry(0.36, this.mobile ? 5 : 8), this.heartMat);
     add(heart, [0, 0, 0]);
     this.heartLight = new THREE.PointLight(ACID, 9, 9, 1.6);
     this.rig.add(this.heartLight);
+    // soft halo around the heart
+    const hc = document.createElement("canvas");
+    hc.width = hc.height = 128;
+    const hx = hc.getContext("2d")!;
+    const grad = hx.createRadialGradient(64, 64, 0, 64, 64, 64);
+    grad.addColorStop(0, "rgba(204,255,0,0.55)");
+    grad.addColorStop(0.3, "rgba(204,255,0,0.16)");
+    grad.addColorStop(1, "rgba(204,255,0,0)");
+    hx.fillStyle = grad;
+    hx.fillRect(0, 0, 128, 128);
+    const haloTex = new THREE.CanvasTexture(hc);
+    haloTex.colorSpace = THREE.SRGBColorSpace;
+    this.halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: haloTex, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+    this.halo.scale.setScalar(2.4);
+    this.rig.add(this.halo);
 
     // gimbal rings
     const flat = new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.PI / 2, 0, 0));
@@ -380,7 +399,7 @@ export class Stage {
         const dx = Math.sin(mid);
         const dz = Math.cos(mid);
         add(m, [dx * 1.3 * rad, (row === 0 ? 0.42 : -0.42) * rad, dz * 1.3 * rad]);
-        if (row === 0 && i === 1) anchor(m, dx * 0.9, 0.5, dz * 0.9);
+        if (row === 0 && i === 1) anchor(m, dx * 0.8, 0.72, dz * 0.8);
       }
     }
 
@@ -529,6 +548,8 @@ export class Stage {
     this.heartMat.uniforms.uTime.value = this.time;
     this.heartMat.uniforms.uGlow.value = glow;
     this.heartLight.intensity = 7 * glow;
+    this.halo.material.opacity = Math.min(1, 0.45 * glow);
+    this.halo.scale.setScalar(2.1 + glow * 0.5);
 
     for (const part of this.parts) {
       part.obj.position.copy(part.home).addScaledVector(part.dir, e);
@@ -542,7 +563,7 @@ export class Stage {
     }
     const intro = smooth(0, 0.16, p);
     const zA = this.mobile || this.w < this.h ? 11.5 : 7.4;
-    const zE = this.mobile || this.w < this.h ? 21 : 13.8;
+    const zE = this.mobile || this.w < this.h ? 24 : 13.6;
     const z = mix(0.62, mix(zA, zE, e), 1 - Math.pow(1 - intro, 2.2));
     this.camB.position.set(0, mix(0, 0.25, intro), z);
     this.camB.lookAt(0, mix(0, 0.1 - e * 0.25, intro), 0);

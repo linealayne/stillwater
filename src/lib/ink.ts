@@ -293,7 +293,7 @@ export class Ink {
   private cursorPull = 0;
   drip = 0; // external (scroll) drip amount 0..1
   accent = 0;
-  edge = 0.046;
+  edge = 0.036;
   ring = { x: 0.5, y: 0.5, r: 0, w: 0 }; // viewport uv / height units
   edgeScale = 1;
 
@@ -445,7 +445,7 @@ export class Ink {
     const vh = window.innerHeight;
     for (const a of this.anchors) {
       const rect = a.el.getBoundingClientRect();
-      const vis = rect.bottom > 0 && rect.top < vh && rect.width > 0;
+      const vis = rect.bottom > 0 && rect.top < vh && rect.width > 0 && +getComputedStyle(a.el).opacity > 0.5;
       let prox = 0;
       if (vis) {
         if (a.burst > 0) prox = 1;
@@ -456,7 +456,7 @@ export class Ink {
           prox = Math.max(0, 1 - Math.hypot(dx, dy) / 300);
           prox = prox > 0 ? 0.25 + prox * 0.75 : 0;
         } else if (a.auto) {
-          prox = 0.5 + 0.25 * Math.sin(this.time * 0.8);
+          prox = 0.78 + 0.22 * Math.sin(this.time * 0.8);
         }
       }
       const rate = prox > a.ext ? 3.2 : 4.5;
@@ -472,8 +472,9 @@ export class Ink {
     const rect = bestRect;
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height / 2;
-    const hw = Math.max(rect.width / 2 - 8, 4);
-    const hh = Math.max(rect.height / 2 - 8, 4);
+    const hw = Math.max(rect.width / 2 - 3, 4);
+    const hh = Math.max(rect.height / 2 - 3, 4);
+    const capA = Math.max(hw - hh, 0);
     const usePointer = this.pointer.active && !a.auto;
     const px = usePointer ? this.pointer.x : cx + Math.cos(this.time * 0.5) * 200;
     const py = usePointer ? this.pointer.y : cy - 140 + Math.sin(this.time * 0.37) * 60;
@@ -481,21 +482,27 @@ export class Ink {
     const vy = py - cy;
     const vl = Math.hypot(vx, vy) || 1;
     const dEdge = Math.hypot(Math.max(rect.left - px, 0, px - rect.right), Math.max(rect.top - py, 0, py - rect.bottom));
-    const splay = a.hover || a.burst > 0 || dEdge < 2;
+    const splay = a.hover || a.burst > 0 || dEdge < 2 || (a.auto && !usePointer);
     const t = this.time;
     let minX = 1e9,
       minY = 1e9,
       maxX = -1e9,
       maxY = -1e9;
-    const small = this.w < 700 ? 0.72 : 1;
+    const small = (this.w < 700 ? 0.72 : 1) * (a.auto && !usePointer ? 0.74 : 1);
     if (a.burst > 0) a.burst = Math.min(a.burst + dt * 2.5, 3);
     a.tendrils.forEach((td, i) => {
       const hx = Math.cos(td.theta);
       const hy = Math.sin(td.theta);
-      const tr = Math.min(hw / Math.max(Math.abs(hx), 1e-3), hh / Math.max(Math.abs(hy), 1e-3));
+      // root sits on the pill's outline (a stadium), not its bounding box
+      let tr = hh / Math.max(Math.abs(hy), 1e-3);
+      if (Math.abs(tr * hx) > capA) {
+        const dc = Math.abs(hx) * capA;
+        tr = dc + Math.sqrt(Math.max(dc * dc - (capA * capA - hh * hh), 0));
+      }
       const rx = cx + hx * tr;
       const ry = cy + hy * tr;
       let ax: number, ay: number, len: number;
+      let reach = 1;
       if (splay) {
         const rot = 0.55 * Math.sin(t * 1.15 + td.phase) + 0.2 * Math.sin(t * 2.7 + td.phase * 2);
         ax = hx * Math.cos(rot) - hy * Math.sin(rot);
@@ -504,6 +511,7 @@ export class Ink {
       } else {
         const facing = Math.max(0, (hx * vx + hy * vy) / vl);
         const wgt = facing * facing;
+        reach = Math.min(1, Math.max(0, (wgt - 0.06) / 0.4));
         const tcx = px - rx;
         const tcy = py - ry;
         const tl = Math.hypot(tcx, tcy) || 1;
@@ -523,8 +531,8 @@ export class Ink {
         len = Math.max(len, 16);
       }
       const ext = Math.min(a.ext, 1);
-      const gx = rx + ax * len * ext;
-      const gy = ry + ay * len * ext;
+      const gx = rx + ax * len * ext * reach;
+      const gy = ry + ay * len * ext * reach;
       if (!td.init) {
         td.tx = rx;
         td.ty = ry;
@@ -539,7 +547,7 @@ export class Ink {
       const bend = Math.sin(t * 2.1 + td.phase) * dl * 0.26;
       const mx = rx + hx * dl * 0.5 + (-ddy / (dl || 1)) * bend;
       const my = ry + hy * dl * 0.5 + (ddx / (dl || 1)) * bend;
-      const grow = Math.min(1, ext * 2.2);
+      const grow = Math.min(1, ext * 2.2) * reach;
       for (let j = 0; j < N_NODE; j++) {
         const s = j / (N_NODE - 1);
         const u = 1 - s;
@@ -778,7 +786,7 @@ export class Ink {
       } else if (this.mode === "recede") {
         for (let k = 0; k < smSteps; k++) {
           let n = 0;
-          if (this.mt < 0.3) for (const hpt of this.holes) this.setSplat(n++, hpt.x, hpt.y, 0.035, -0.5);
+          if (this.mt < 0.16) for (const hpt of this.holes) this.setSplat(n++, hpt.x, hpt.y, 0.016, -0.6);
           const clr = Math.max(0, Math.min(1, (this.mt - 1.5) / 0.7));
           this.simStep(dt / smSteps, { react: -0.5, relax: 0, floor: 1, fill: -clr, edge, sinkOn: 0, splatN: n });
         }
@@ -791,7 +799,7 @@ export class Ink {
       } else if (this.mode === "drain") {
         for (let k = 0; k < smSteps; k++) {
           let n = 0;
-          if (this.mt < 0.3) {
+          if (this.mt < 0.14) {
             const pts = [
               [0.02, 0.02],
               [0.98, 0.02],
@@ -803,7 +811,7 @@ export class Ink {
               [0.99, 0.5],
             ];
             for (const [x, y] of pts) {
-              if (Math.hypot(x - this.origin.x, y - this.origin.y) > 0.3) this.setSplat(n++, x, y, 0.05, -0.5);
+              if (Math.hypot(x - this.origin.x, y - this.origin.y) > 0.3) this.setSplat(n++, x, y, 0.018, -0.6);
             }
           }
           const clr = Math.max(0, Math.min(1, (this.mt - 1.7) / 0.8));

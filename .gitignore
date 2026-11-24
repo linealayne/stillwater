@@ -43,3 +43,6 @@ next-env.d.ts
 # tooling
 .playwright-mcp
 /shots-tmp
+
+.vercel
+.env*
